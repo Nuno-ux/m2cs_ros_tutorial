@@ -15,7 +15,7 @@ public:
             [this](const m2_interfaces::msg::JoyData::SharedPtr msg) { ps4_callback(*msg); });
 
         // 2. create a publisher here for publishing turtle's velocity...
-        pub_ = this->create_subscription<geometry_msgs::msg::Twist>("turtle1/cmd_vel", 10);
+        pub_ = this->create_publisher<geometry_msgs::msg::Twist>("turtle1/cmd_vel", 10);
 
         // 3. create a service client here for clear background...
         client_clear_ = this->create_client<std_srvs::srv::Empty>("/clear");
@@ -29,13 +29,17 @@ private:
     {
         // --- Requirement 1. Basic driving ---
         geometry_msgs::msg::Twist twist;
-        float aggressiveness = 1.0;
-        // TODO: 1.1 change level of "aggressiveness"
         
-
+        // TODO: 1.1 change level of "aggressiveness"
+        if ((data.dpad_y == 1) && (old_data_.dpad_y != 1) && (aggressiveness_ < 5)) {
+            aggressiveness_ += 1;
+        }
+        if ((data.dpad_y == -1) && (old_data_.dpad_y != -1) && (aggressiveness_ > 1)){
+            aggressiveness_ -= 1;
+        }
         // TODO: 1.2 calculate output velocity from input ps4 data, and publish it
         twist.linear.x = aggressiveness * data.hat_ly;
-        twist.angular.z = aggressiveness * data.hat_lx;
+        twist.angular.z = aggressiveness * data.hat_rx;
         pub_->publish(twist);
         // --- Requirement 2. Clear background ---
         // TODO: detect a 'ps' button being pressed, and call corresponding service
@@ -102,6 +106,7 @@ private:
     rclcpp::Client<std_srvs::srv::Empty>::SharedPtr client_clear_;
     // TODO: add a service client here for changing turtle's pen color...
     rclcpp::Client<turtlesim::srv::SetPen>::SharedPtr client_set_pen_;
+    float aggressiveness_ = 1.0;
 };
 
 int main(int argc, char* argv[])
